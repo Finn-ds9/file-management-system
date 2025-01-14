@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Management System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>File Management System</h1>
+
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <h2>Upload File</h2>
+      <input type="file" id="fileInput">
+      <button id="uploadBtn">Upload</button>
+    </div>
+
+    <!-- File List Section -->
+    <div class="file-list-section">
+      <h2>File List</h2>
+      <input type="text" id="searchInput" placeholder="Search files...">
+      <ul id="fileList"></ul>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

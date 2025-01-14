@@ -1,0 +1,38 @@
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+
+const app = express();
+const PORT = 3000;
+
+// Configure multer for file uploads
+const upload = multer({ dest: "files/" });
+
+// Serve static files (frontend)
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+// Upload endpoint
+app.post("/upload", upload.single("file"), (req, res) => {
+  const file = req.file;
+  const targetPath = path.join(__dirname, "files", file.originalname);
+
+  // Rename the file to its original name
+  fs.rename(file.path, targetPath, (err) => {
+    if (err) return res.status(500).send("Error saving file.");
+    res.send("File uploaded successfully.");
+  });
+});
+
+// Get list of files
+app.get("/files", (req, res) => {
+  fs.readdir(path.join(__dirname, "files"), (err, files) => {
+    if (err) return res.status(500).send("Error reading files.");
+    res.json(files);
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});

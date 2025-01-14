@@ -1,0 +1,54 @@
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+const fileList = document.getElementById("fileList");
+const searchInput = document.getElementById("searchInput");
+
+// Fetch and display files
+async function fetchFiles() {
+  const response = await fetch("http://localhost:3000/files");
+  const files = await response.json();
+
+  fileList.innerHTML = "";
+  files.forEach((file) => {
+    const li = document.createElement("li");
+    li.textContent = file;
+    fileList.appendChild(li);
+  });
+}
+
+// Upload file
+uploadBtn.addEventListener("click", async () => {
+  const file = fileInput.files[0];
+  if (!file) {
+    alert("Please select a file!");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  await fetch("http://localhost:3000/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  fileInput.value = "";
+  fetchFiles();
+});
+
+// Search files
+searchInput.addEventListener("input", () => {
+  const term = searchInput.value.toLowerCase();
+  const items = fileList.querySelectorAll("li");
+
+  items.forEach((item) => {
+    if (item.textContent.toLowerCase().includes(term)) {
+      item.style.display = "block";
+    } else {
+      item.style.display = "none";
+    }
+  });
+});
+
+// Initial load
+fetchFiles();

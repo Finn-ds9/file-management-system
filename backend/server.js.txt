@@ -1,38 +1,1364 @@
-const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-
-const app = express();
-const PORT = 3000;
-
-// Configure multer for file uploads
-const upload = multer({ dest: "files/" });
-
-// Serve static files (frontend)
-app.use(express.static(path.join(__dirname, "../frontend")));
-
-// Upload endpoint
-app.post("/upload", upload.single("file"), (req, res) => {
-  const file = req.file;
-  const targetPath = path.join(__dirname, "files", file.originalname);
-
-  // Rename the file to its original name
-  fs.rename(file.path, targetPath, (err) => {
-    if (err) return res.status(500).send("Error saving file.");
-    res.send("File uploaded successfully.");
-  });
-});
-
-// Get list of files
-app.get("/files", (req, res) => {
-  fs.readdir(path.join(__dirname, "files"), (err, files) => {
-    if (err) return res.status(500).send("Error reading files.");
-    res.json(files);
-  });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+{
+  "name": "Crawl_youtube_final",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4256,
+        608
+      ],
+      "id": "b2ddc21f-c1ae-4363-a868-17c76bc21c9a",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7481d3ec-8d98-4954-bf79-7b31ee4c71ab",
+              "leftValue": "={{ $json['Link đối thủ cần theo dõi '] }}",
+              "rightValue": "/@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3024,
+        544
+      ],
+      "id": "f9fed3cc-a87b-4e29-a963-c18f8cf2ef8e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n\nfunction extractHandle(url) {\n  const match = url.match(/youtube\\.com\\/@([A-Za-z0-9._-]+)/);\n  return match ? `@${match[1]}` : null;\n}\nconst url =$input.item.json['Link đối thủ cần theo dõi '];\n\nreturn {\n  forHandle: extractHandle(url)\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        304
+      ],
+      "id": "84eba69f-b021-4140-9d32-32efbd449e9f",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractChannelId(url) {\n  const match = url.match(/youtube\\.com\\/channel\\/(UC[0-9A-Za-z_-]{21,})/);\n  return match ? match[1] : null;\n}\n\n\nconst url = $input.item.json['Link đối thủ cần theo dõi '];\nreturn {\n  chanelId: extractChannelId(url)\n}\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2784,
+        768
+      ],
+      "id": "3284a0a7-9146-4777-9eb5-577941daec6d",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4cc07e1-ce42-4436-ae3e-e1131de65dec",
+              "name": "chanel_id",
+              "value": "={{ $json.chanelId ??  $json.items[0].id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2000,
+        768
+      ],
+      "id": "e355a976-2300-4036-bcf3-3dca1036a4a5",
+      "name": "Chanel id"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/channels",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "id"
+            },
+            {
+              "name": "forHandle",
+              "value": "={{ $json.forHandle }}"
+            },
+            {
+              "name": "key",
+              "value": "AIzaSyDNQzqkxAlFCUpCtxxysi4isJ6KJIcxXFU"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2256,
+        304
+      ],
+      "id": "436c2df6-fb78-4ba0-9a1e-49c3234ee7c4",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/channels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "id, snippet,contentDetails"
+            },
+            {
+              "name": "id",
+              "value": "={{ $json.chanel_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1616,
+        768
+      ],
+      "id": "423fc6c0-79eb-426d-85d1-e8e34d798c36",
+      "name": "HTTP Request7",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "aUB5DkEWk4SUSO1l",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "get",
+        "videoId": "={{ $json.snippet.resourceId.videoId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        656
+      ],
+      "id": "d2e6389a-448f-443c-9818-931b12dfeaad",
+      "name": "YouTube",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "aUB5DkEWk4SUSO1l",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3536809e-bfcd-46a8-a58b-d581cbdf271a",
+              "name": "id",
+              "value": "=https://www.youtube.com/watch?v={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -528,
+        448
+      ],
+      "id": "253c29b3-5186-445e-810c-2712d9a55712",
+      "name": "Edit Fields9"
+    },
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "operation": "getAll",
+        "playlistId": "={{ $json.items[0].contentDetails.relatedPlaylists.uploads }}",
+        "limit": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        656
+      ],
+      "id": "4cd984a0-a766-46bd-86aa-2fc8a05fe8e1",
+      "name": "Get many playlist items4",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "aUB5DkEWk4SUSO1l",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0",
+          "mode": "list",
+          "cachedResultName": "File kênh cần Crawling",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Tổng hợp",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Is Scraped",
+              "lookupValue": "Yes"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3792,
+        608
+      ],
+      "id": "45c34881-87dd-460e-ad9d-c5bd689f4228",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZLXhCsCnrJr7vtRc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit?gid=1367018162#gid=1367018162",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1367018162,
+          "mode": "list",
+          "cachedResultName": "Output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit#gid=1367018162"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Ngày đăng": "={{ $json.snippet.publishedAt.split('T')[0] }}",
+            "Tên kênh": "={{ $json.snippet.channelTitle }}",
+            "Lượng view": "={{ $json.statistics.viewCount }}",
+            "Tên video": "={{ $json.snippet.localized.title }}",
+            "Video URL": "={{ $json.id }}",
+            "Thumbnail": "={{ $json.snippet.thumbnails.medium.url }}",
+            "Description": "={{ $json.snippet.description }}",
+            "Tag": "={{ $json.snippet.tags }}"
+          },
+          "matchingColumns": [
+            "Video URL"
+          ],
+          "schema": [
+            {
+              "id": "Ngày đăng",
+              "displayName": "Ngày đăng",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tên kênh",
+              "displayName": "Tên kênh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lượng view",
+              "displayName": "Lượng view",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tên video",
+              "displayName": "Tên video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Video URL",
+              "displayName": "Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Thumbnail",
+              "displayName": "Thumbnail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tóm tắt nội dung video",
+              "displayName": "Tóm tắt nội dung video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tag",
+              "displayName": "Tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nội dung mới ",
+              "displayName": "Nội dung mới ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tiêu đề mới",
+              "displayName": "Tiêu đề mới",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tag mới",
+              "displayName": "Tag mới",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        32,
+        -96
+      ],
+      "id": "765a2c34-c2f1-473b-8dad-9e5935ca4df8",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZLXhCsCnrJr7vtRc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.supadata.ai/v1/youtube/transcript?url=https://www.youtube.com/watch?v={{ $json.id }}&text=true",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "sd_dfc5baa61d5b71356e9619842ff170fe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -496,
+        928
+      ],
+      "id": "726dd7b2-bea3-4eca-9bae-dfc0bcc6713a",
+      "name": "Get transcript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -832,
+        912
+      ],
+      "id": "a9d39eca-b024-495f-b203-e18189700bce",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        480,
+        928
+      ],
+      "id": "b0947280-feb1-4dca-817c-13bf2da338e8",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qxb50kMM0U5ai8VY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit?gid=1367018162#gid=1367018162",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1367018162,
+          "mode": "list",
+          "cachedResultName": "Output",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dZtp206iNaNX7jbrdCoxw6G92Bbr74TiBsA7pwv9iD0/edit#gid=1367018162"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Video URL": "=https://www.youtube.com/watch?v={{ $input.all().first().json.Key}}",
+            "Tóm tắt nội dung video": "={{ $input.all().first().json['Tóm tắt nội dung']}}",
+            "Nội dung mới ": "={{ $input.all().first().json['Nội dung mới']}}",
+            "Tiêu đề mới": "={{ $input.all().first().json['Tiêu đề mới']}}",
+            "Tag mới": "={{ $input.all().first().json['Hagtag mới']}}"
+          },
+          "matchingColumns": [
+            "Video URL"
+          ],
+          "schema": [
+            {
+              "id": "Ngày đăng",
+              "displayName": "Ngày đăng",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tên kênh",
+              "displayName": "Tên kênh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Lượng view",
+              "displayName": "Lượng view",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tên video",
+              "displayName": "Tên video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Video URL",
+              "displayName": "Video URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Thumbnail",
+              "displayName": "Thumbnail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tóm tắt nội dung video",
+              "displayName": "Tóm tắt nội dung video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tag",
+              "displayName": "Tag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Nội dung mới ",
+              "displayName": "Nội dung mới ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tiêu đề mới",
+              "displayName": "Tiêu đề mới",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Tag mới",
+              "displayName": "Tag mới",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1776,
+        1808
+      ],
+      "id": "dd6dbb98-8844-4e20-a383-e13bc8368425",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ZLXhCsCnrJr7vtRc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        480,
+        1216
+      ],
+      "id": "219f285f-0181-4fb2-94bf-ffe5efb23c6e",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qxb50kMM0U5ai8VY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        1488
+      ],
+      "id": "cf9f6584-93f4-468b-bdab-eca83bc43179",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qxb50kMM0U5ai8VY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        1760
+      ],
+      "id": "1f88d8d8-f0f5-47c7-9cd0-9a59d3d2c9d5",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "qxb50kMM0U5ai8VY",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là một nhà tóm tắt video, bạn hãy đưa ra out như đang tóm tắt video dựa trên văn bản\nBạn hãi tóm tắt văn bản sau giúp tôi chỉ giữ lại những ý chính của nó :\n- Bắt buộc output trả ra là Tiếng Việt \n- Chỉ gồm 5-10 câu\n {{$json.content}}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        688
+      ],
+      "id": "afeb9e11-f9d7-476d-854e-e2fa5deaaea6",
+      "name": "Tóm tắt nội dung",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là chuyển gia viết content cho các kênh youtbe. Bạn sẽ viết lại content sau cho mới và vui nhộn nhất có thể để tôi có kịch bản mới làm video  nhưng nội dung tương đồng với loạt sub sau. Chỉ trả về phần nội dung kịch bản, không kèm tiêu đề, giải thích hoặc hashtag. {{ $json.content }}\nBắt buộc nội dung là Tiếng Việt\nViết ngắn gọn thôi chỉ từ 15-20 câu \n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        480,
+        1040
+      ],
+      "id": "1057f2c8-6263-4c96-8b53-d77d8ff7ae6d",
+      "name": "Viết lại nội dung mới",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là chuyên gia đặt tiêu đề theo trend cho các kênh YouTube. Dựa vào tiêu đề cũ và nội dung mới: \"{{ $json.content }}\", hãy viết lại tiêu đề mới thật thu hút và trendy. Chỉ trả về tiêu đề mới, không thêm bất kỳ giải thích hay văn bản nào khác.\n\nTiêu đề phải là Tiếng Việt",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        400,
+        1312
+      ],
+      "id": "159bcdf1-4870-4ba0-9a05-404c30365ae7",
+      "name": "Viết lại tiêu đề mới",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là chuyên gia tạo hashtag theo xu hướng cho các kênh YouTube. Dựa vào tiêu đề cũvà nội dung mới: \"{{ $json.content}}\", hãy viết ra các hashtag trending, liên quan và hiệu quả nhất cho video. Chỉ trả về danh sách hashtag, không thêm bất kỳ giải thích hay văn bản nào khác.\n\nBắt buộc nội dung trả ra là tiếng việt",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        1568
+      ],
+      "id": "e89c9484-fd49-4e79-8743-245c138a565e",
+      "name": "Viết lại tag mới",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1648,
+        1104
+      ],
+      "id": "25cbd499-7586-445c-be3a-b91f4eacde0f",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ttNew =$input.all().at(0).json[\"Tóm tắt nội dung\"] || [];\nconst ContentNew = $input.all().at(1).json[\"Nội dung mới\"] || [];\nconst TitleNew = $input.all().at(2).json[\"Tiêu đề mới\"] || [];\nconst hagtagNew = $input.all().at(3).json[\"Tag mới\"] || [];\nconst key = $input.all().at(4).json.id;\n\nreturn {\n      \"Nội dung mới\": ContentNew,\n      \"Tiêu đề mới\": TitleNew,                \n      \"Hagtag mới\": hagtagNew,\n      \"Tóm tắt nội dung\": ttNew,\n      \"Key\":key\n    };\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        1072
+      ],
+      "id": "0fab7a33-86ce-468f-99f7-7ef582a3bc4f",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3e44c2b3-3e35-4a39-8afa-df2c36e8f15f",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        848,
+        1840
+      ],
+      "id": "27b2da59-425e-4515-9ac0-594786f6505e",
+      "name": "Edit Fields12"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec98af22-1740-475d-bfd5-3f5051ad173b",
+              "name": "Nội dung mới",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        1024
+      ],
+      "id": "a9d70876-bba0-48b2-aa98-4fb1077f0994",
+      "name": "Edit Fields13"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "226896ba-4849-4003-a81f-79be584813cc",
+              "name": "Tóm tắt nội dung",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1056,
+        688
+      ],
+      "id": "44279502-81f3-445d-b1dc-c78f4550d24f",
+      "name": "Edit Fields14"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ebc1c15e-3eba-4895-8119-ad25ed16c647",
+              "name": "Tiêu đề mới",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        816,
+        1280
+      ],
+      "id": "369d13f0-5848-4850-8192-35e727095572",
+      "name": "Edit Fields15"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec98af22-1740-475d-bfd5-3f5051ad173b",
+              "name": "Tag mới",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        1440
+      ],
+      "id": "fda6de1f-b64c-4809-9440-265c8fca4e83",
+      "name": "Edit Fields16"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3584,
+        608
+      ],
+      "id": "b6b2a2c5-8122-44bb-b530-71ce61a18b20",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "Chuẩn hóa Sheet\n",
+        "height": 2016,
+        "width": 2816,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -4512,
+        48
+      ],
+      "id": "53da65d0-aea5-4106-adeb-62424b4c6c92",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "GEN AI\n",
+        "height": 2208,
+        "width": 3712,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1696,
+        -144
+      ],
+      "id": "4a1cdfdc-8130-471b-a3a4-ff51a1eee3a6",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Chanel id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chanel id": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Chanel id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "Get many playlist items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields9",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields9": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many playlist items4": {
+      "main": [
+        [
+          {
+            "node": "YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get transcript1": {
+      "main": [
+        [
+          {
+            "node": "Tóm tắt nội dung",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Viết lại nội dung mới",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Viết lại tiêu đề mới",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Viết lại tag mới",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get transcript1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Fields12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tóm tắt nội dung",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Viết lại nội dung mới",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Viết lại tiêu đề mới",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Viết lại tag mới",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tóm tắt nội dung": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Viết lại nội dung mới": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Viết lại tiêu đề mới": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields15",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Viết lại tag mới": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields16",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields12": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Edit Fields13": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields14": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields15": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Edit Fields16": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a0b2faa-9105-4e23-b1ce-35bfd69575b5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "030bf27b1a78b3873f17584bee0e579d0aad248d89100cd253506dcbce8bcaf3"
+  },
+  "id": "H0QQKzIgLxksVPzS",
+  "tags": []
+}
